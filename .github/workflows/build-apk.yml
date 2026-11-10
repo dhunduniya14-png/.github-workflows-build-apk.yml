@@ -19,8 +19,10 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.4'
 
     - name: Write All Project and AI Source Files
       run: |
@@ -383,7 +385,7 @@ jobs:
         class JarvisVoiceEngine(
             private val context: Context,
             private val onResult: (String) -> Unit,
-            onStatusUpdate: (String) -> Unit
+            private val onStatusUpdate: (String) -> Unit
         ) : RecognitionListener {
             private var speechRecognizer: SpeechRecognizer? = null
             private var textToSpeech: TextToSpeech? = null
@@ -403,9 +405,11 @@ jobs:
                     putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
                 }
                 speechRecognizer?.startListening(intent)
+                onStatusUpdate("सुन रहा हूँ...")
             }
             fun stopListening() {
                 speechRecognizer?.stopListening()
+                onStatusUpdate("शांत")
             }
             fun speak(text: String) {
                 textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ID")
@@ -520,11 +524,8 @@ jobs:
         }
         EOF
 
-    - name: Download Wrapper and Build APK
-      run: |
-        gradle wrapper --gradle-version 8.4 --distribution-type bin
-        chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon --stacktrace
+    - name: Build Debug APK with Gradle
+      run: gradle assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
